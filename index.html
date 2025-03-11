@@ -1,12 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <title>LangChain Demo</title>
 </head>
 <body>
-    <div class="hello">hello world</div>
-    <script src="agent.js"></script>
+  <h2>LangChain Agent Query</h2>
+  <input type="text" id="prompt" placeholder="Enter your query" size="50"/>
+  <button onclick="sendQuery()">Ask</button>
+
+  <h3>Response:</h3>
+  <pre id="response"></pre>
+
+  <script>
+    async function sendQuery() {
+      const prompt = document.getElementById("prompt").value;
+      const responseEl = document.getElementById("response");
+      responseEl.textContent = "Loading...";
+
+      const res = await fetch("http://localhost:5000/api/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: prompt })
+      });
+
+      const data = await res.json();
+      responseEl.textContent = data.reply || data.error;
+    }
+  </script>
 </body>
 </html>
