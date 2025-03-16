@@ -1,32 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>LangChain Demo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Document Assistant</title>
+    
+    <!-- Resource Hints -->
+    <link rel="preload" href="/public/styles/main.css" as="style">
+    <link rel="preload" href="/public/js/app.js" as="script">
+    <link rel="preconnect" href="https://accounts.google.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Performance monitoring -->
+    <script>
+        // Performance metrics tracking
+        const metrics = {
+            timeToFirstByte: 0,
+            firstContentfulPaint: 0,
+            domInteractive: 0
+        };
+
+        // Create Performance Observer
+        const observer = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+                if (entry.name === 'first-contentful-paint') {
+                    metrics.firstContentfulPaint = entry.startTime;
+                }
+            }
+        });
+        observer.observe({ entryTypes: ['paint'] });
+
+        // Record navigation timing metrics
+        window.addEventListener('load', () => {
+            const navigation = performance.getEntriesByType('navigation')[0];
+            metrics.timeToFirstByte = navigation.responseStart - navigation.requestStart;
+            metrics.domInteractive = navigation.domInteractive;
+
+            // Log metrics
+            console.log('Performance Metrics:', metrics);
+
+            // Send metrics to server (if needed)
+            fetch('/api/metrics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(metrics)
+            }).catch(console.error);
+        });
+    </script>
+
+    <link rel="stylesheet" href="/public/styles/main.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
 <body>
-  <h2>LangChain Agent Query</h2>
-  <input type="text" id="prompt" placeholder="Enter your query" size="50"/>
-  <button onclick="sendQuery()">Ask</button>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="header">
+            <h1 class="app-title">Smart Document Assistant</h1>
+            <div class="auth-status">
+                <div id="statusIndicator" class="status-indicator"></div>
+                <span id="authStatus">Checking connection status...</span>
+                <button id="authButton" class="btn" style="display: none;">
+                    <span class="material-icons">login</span>
+                    Connect to Google
+                </button>
+            </div>
+        </header>
 
-  <h3>Response:</h3>
-  <pre id="response"></pre>
+        <!-- File Upload Section -->
+        <div class="card">
+            <h2>
+                <span class="material-icons">upload_file</span>
+                Upload Images
+            </h2>
+            <div id="uploadArea" class="upload-area">
+                <input type="file" id="uploadInput" accept="image/*" multiple style="display: none;">
+                <div class="upload-content">
+                    <span class="material-icons" style="font-size: 48px; color: var(--primary-color);">cloud_upload</span>
+                    <p>Drag and drop images here or click to select files</p>
+                    <p style="font-size: var(--font-size-small); color: var(--text-secondary);">
+                        Images will be processed and updates will be made automatically
+                    </p>
+                </div>
+            </div>
+        </div>
 
-  <script>
-    async function sendQuery() {
-      const prompt = document.getElementById("prompt").value;
-      const responseEl = document.getElementById("response");
-      responseEl.textContent = "Loading...";
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Email Section -->
+            <div class="card">
+                <h2>
+                    <span class="material-icons">email</span>
+                    Email Updates
+                </h2>
+                <div id="emailUpdates" class="update-list">
+                    <div class="loading">Loading emails...</div>
+                </div>
+            </div>
 
-      const res = await fetch("http://localhost:5000/api/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: prompt })
-      });
+            <!-- Calendar Section -->
+            <div class="card">
+                <h2>
+                    <span class="material-icons">event</span>
+                    Calendar Events
+                </h2>
+                <div class="card-actions">
+                    <button id="createEventBtn" class="btn btn-secondary">
+                        <span class="material-icons">add</span>
+                        New Event
+                    </button>
+                </div>
+                <div id="calendarUpdates" class="update-list">
+                    <div class="loading">Loading events...</div>
+                </div>
+            </div>
 
-      const data = await res.json();
-      responseEl.textContent = data.reply || data.error;
-    }
-  </script>
+            <!-- Documents Section -->
+            <div class="card">
+                <h2>
+                    <span class="material-icons">description</span>
+                    Documents
+                </h2>
+                <div class="card-actions">
+                    <button id="createDocBtn" class="btn btn-secondary">
+                        <span class="material-icons">add</span>
+                        New Document
+                    </button>
+                </div>
+                <div id="docUpdates" class="update-list">
+                    <div class="loading">Loading documents...</div>
+                </div>
+            </div>
+
+            <!-- Spreadsheets Section -->
+            <div class="card">
+                <h2>
+                    <span class="material-icons">grid_on</span>
+                    Spreadsheets
+                </h2>
+                <div class="card-actions">
+                    <button id="updateSheetBtn" class="btn btn-secondary">
+                        <span class="material-icons">add</span>
+                        Update Sheet
+                    </button>
+                </div>
+                <div id="sheetUpdates" class="update-list">
+                    <div class="loading">Loading spreadsheets...</div>
+                </div>
+            </div>
+
+            <!-- Tasks Section -->
+            <div class="card">
+                <h2>
+                    <span class="material-icons">task_alt</span>
+                    Tasks
+                </h2>
+                <div class="card-actions">
+                    <button id="addTaskBtn" class="btn btn-secondary">
+                        <span class="material-icons">add</span>
+                        New Task
+                    </button>
+                </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="active">Active</button>
+                    <button class="tab-btn" data-tab="completed">Completed</button>
+                </div>
+                <div id="taskLists">
+                    <div id="activeTasks" class="update-list">
+                        <!-- Active tasks will be populated here -->
+                    </div>
+                    <div id="completedTasks" class="update-list" style="display: none;">
+                        <!-- Completed tasks will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Bar -->
+        <div class="card" style="margin-top: var(--spacing-unit);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>
+                    <span class="material-icons">settings</span>
+                    Settings
+                </h2>
+                <button id="darkModeToggle" class="btn btn-secondary">
+                    <span class="material-icons">dark_mode</span>
+                    Toggle Dark Mode
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Button -->
+    <button id="helpButton" class="btn" style="position: fixed; bottom: 20px; right: 20px; border-radius: 50%; width: 56px; height: 56px; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <span class="material-icons">help</span>
+    </button>
+
+    <script src="/public/js/app.js"></script>
 </body>
 </html>
